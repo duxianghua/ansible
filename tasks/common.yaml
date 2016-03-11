@@ -1,0 +1,41 @@
+#this roles is common configure file
+- name: update system
+  yum: name=* state=latest
+  tags: update
+
+- name: Create the repository for EPEL
+  copy: src=epel.repo dest=/etc/yum.repos.d/epel.repo
+
+- name: Create the GPG key for EPEL
+  copy: src=RPM-GPG-KEY-EPEL-6 dest=/etc/pki/rpm-gpg
+
+- name: Create the repository for IUS
+  copy: src=ius.repo dest=/etc/yum.repos.d/ius.repo
+
+- name: Create the GPG key for IUS
+  copy: src=IUS-COMMUNITY-GPG-KEY dest=/etc/pki/rpm-gpg
+
+- name: clean cache
+  commond: yum clean all
+  tags: yum_cache
+
+- name: yum makecache
+  commond: yum makecache
+  tags: yum_cache
+
+- name: disable some service
+  service: name={{ item }} enabled=no
+  with_items:
+    - acpid
+    - ip6tables
+    - netfs
+    - postfix
+    - udev-post
+
+- name: delect old timezone file
+  file: path=/etc/localtime state=absent
+  notify: 
+    - handlers:
+      - name: create timezone link file
+        file: scr=/usr/share/zoneinfo/Asia/{{TIME_ZONE}} 
+        dest=/etc/localtime owner=root group=root mode=0777

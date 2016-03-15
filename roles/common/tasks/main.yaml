@@ -1,0 +1,63 @@
+#this roles is common configure file
+- name: update system
+  yum: name=* state=latest
+  tags: update
+
+- name: Create the repository for EPEL
+  copy: src=epel.repo dest=/etc/yum.repos.d/epel.repo
+
+- name: Create the GPG key for EPEL
+  copy: src=RPM-GPG-KEY-EPEL-6 dest=/etc/pki/rpm-gpg
+
+- name: Create the repository for IUS
+  copy: src=ius.repo dest=/etc/yum.repos.d/ius.repo
+
+- name: Create the GPG key for IUS
+  copy: src=IUS-COMMUNITY-GPG-KEY dest=/etc/pki/rpm-gpg
+
+- name: clean cache
+  command: yum clean all
+  tags: yum_cache
+
+- name: yum makecache
+  command: yum makecache
+  tags: yum_cache
+
+- name: disable some service
+  service: name={{ item }} enabled=no
+  with_items:
+    - acpid
+    - ip6tables
+    - netfs
+    - postfix
+    - udev-post
+
+- name: delect old timezone file
+  file: path=/etc/localtime state=absent
+  notify: create timezone link file
+
+- name: notify hostname
+  hostname: name={{ hostname }}
+
+# System parameter adjustment
+- name: configure I/O mode
+  command: /bin/sed -i 's/KEYTABLE=us$/KEYTABLE=us elevator=noop/' /boot/grub/grub.conf
+
+- name: sysctl configure
+  copy: src=sysctl dest=/etc/sysctl mode=0644 owner=root group=root
+  notify: reload sysctl
+
+- name: configure /etc/security/limits.conf
+  copy: src=limits.conf dest=/etc/security/limits.conf mode=0644 owner=root group=root
+
+- name: max number of processes
+  command: sed -i 's/1024/102400/' /etc/security/limits.d/90-nproc.conf
+
+- name: insert iptables template
+  template: src=iptables.j2 dest=/etc/sysconfig/iptables
+  notify: restart iptables
+
+- name: configure sshd configfile
+  copy: src=sshd_conf dest=/etc/ssh/sshd_config mode=0600 owner=root group=root
+  notify: restart sshd
+

@@ -1,0 +1,13 @@
+#handler for common
+- name: create timezone link file
+  file: src=/usr/share/zoneinfo/Asia/{{TIME_ZONE}} 
+        dest=/etc/localtime owner=root group=root mode=0777
+
+- name: reload sysctl
+  command: /sbin/sysctl -p
+
+- name: restart iptables
+  service: name=iptables state=restart
+
+- name: restart sshd
+  service: name=sshd  state=restart
